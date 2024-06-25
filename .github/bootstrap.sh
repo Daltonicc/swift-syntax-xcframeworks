@@ -88,7 +88,7 @@ MODULES=(
 
 PLATFORMS=(
     # xcodebuild destination    XCFramework folder name
-    "iOS"                       "ios-$ARCH"
+    "macos"                     "macos-$ARCH"
     "iOS Simulator"             "ios-$ARCH-simulator"
 )
 
@@ -96,6 +96,34 @@ XCODEBUILD_LIBRARIES=""
 PLATFORMS_OUTPUTS_PATH="$PWD/outputs"
 
 cd $SWIFT_SYNTAX_NAME
+
+XCODEBUILD_PLATFORM_NAME="iOS"
+XCFRAMEWORK_PLATFORM_NAME="ios-$ARCH"
+
+OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
+LIBRARY_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}.a"
+XCODEBUILD_LIBRARIES="$XCODEBUILD_LIBRARIES -library $LIBRARY_PATH"
+
+mkdir -p "$OUTPUTS_PATH"
+
+# `swift build` cannot be used as it doesn't support building for iOS directly
+xcodebuild -quiet clean build \
+    -scheme $WRAPPER_NAME \
+    -configuration $CONFIGURATION \
+    -destination "generic/platform=$XCODEBUILD_PLATFORM_NAME" \
+    -derivedDataPath $DERIVED_DATA_PATH \
+    SKIP_INSTALL=NO \
+    BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+    >/dev/null 2>&1
+
+for MODULE in ${MODULES[@]}; do
+    INTERFACE_PATH="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/${MODULE}.build/Objects-normal/$ARCH/${MODULE}.swiftinterface"
+    cp $INTERFACE_PATH "$OUTPUTS_PATH"
+done
+
+# FIXME: figure out how to make xcodebuild output the .a file directly. For now, we package it ourselves.
+ar -crs "$LIBRARY_PATH" $DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/*.build/Objects-normal/$ARCH/Binary/*.o
+
 
 for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     XCODEBUILD_PLATFORM_NAME="${PLATFORMS[i]}"
