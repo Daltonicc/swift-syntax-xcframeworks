@@ -61,9 +61,9 @@ MODULES=(
 )
 
 PLATFORMS=(
-    "generic/platform=macos"                     "macos-$ARCH"
-    "generic/platform=iOS"                       "ios-$ARCH"
-    "generic/platform=iOS Simulator"             "ios-$ARCH-simulator"
+    "macos"                     "macos-$ARCH"
+    "iOS"                       "ios-$ARCH"
+    "iOS Simulator"             "ios-$ARCH-simulator"
 )
 
 XCODEBUILD_LIBRARIES=""
