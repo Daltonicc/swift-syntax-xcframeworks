@@ -9,6 +9,10 @@ ARCH="arm64"
 CONFIGURATION="debug"
 DERIVED_DATA_PATH="$PWD/derivedData"
 
+#
+# Verify input
+#
+
 if [ -z "$SWIFT_SYNTAX_VERSION" ]; then
     echo "Swift syntax version (git tag) must be supplied as the first argument"
     exit 1
@@ -19,6 +23,10 @@ if ! [[ $SWIFT_SYNTAX_VERSION =~ $SEMVER_PATTERN ]]; then
     exit 1
 fi
 
+#
+# Print input
+#
+
 cat << EOF
 
 Input:
@@ -28,12 +36,30 @@ EOF
 
 set -eux
 
+#
+# Clone package
+#
+
 git clone --branch $SWIFT_SYNTAX_VERSION --single-branch $SWIFT_SYNTAX_REPOSITORY_URL
 
+#
+# Add static wrapper product
+#
+
 sed -i '' -E "s/(products: \[)$/\1\n    .library(name: \"${WRAPPER_NAME}\", type: .static, targets: [\"${WRAPPER_NAME}\"]),/g" "$SWIFT_SYNTAX_NAME/Package.swift"
+
+#
+# Add target for wrapper product
+#
+
 sed -i '' -E "s/(targets: \[)$/\1\n    .target(name: \"${WRAPPER_NAME}\", dependencies: [\"SwiftCompilerPlugin\", \"SwiftSyntax\", \"SwiftSyntaxBuilder\", \"SwiftSyntaxMacros\", \"SwiftSyntaxMacrosTestSupport\"]),/g" "$SWIFT_SYNTAX_NAME/Package.swift"
 
+#
+# Add exported imports to wrapper target
+#
+
 WRAPPER_TARGET_SOURCES_PATH="$SWIFT_SYNTAX_NAME/Sources/$WRAPPER_NAME"
+
 mkdir -p $WRAPPER_TARGET_SOURCES_PATH
 
 tee $WRAPPER_TARGET_SOURCES_PATH/ExportedImports.swift <<EOF
@@ -61,9 +87,10 @@ MODULES=(
 )
 
 PLATFORMS=(
+    # xcodebuild destination    XCFramework folder name
     "macos"                     "macos-$ARCH"
-    "iphoneos"                  "iphoneos-$ARCH"
     "iOS Simulator"             "ios-$ARCH-simulator"
+    "iphoneos"                  "ios-$ARCH"
 )
 
 XCODEBUILD_LIBRARIES=""
@@ -102,6 +129,10 @@ done
 
 cd ..
 
+#
+# Create XCFramework
+#
+
 XCFRAMEWORK_NAME="$WRAPPER_NAME.xcframework"
 XCFRAMEWORK_PATH="$XCFRAMEWORK_NAME"
 
@@ -117,8 +148,12 @@ done
 
 zip --quiet --recurse-paths $XCFRAMEWORK_NAME.zip $XCFRAMEWORK_NAME
 
+#
+# Create package manifest
+#
+
 CHECKSUM=$(swift package compute-checksum $XCFRAMEWORK_NAME.zip)
-URL="https://github.com/Daltonicc/swift-syntax-xcframeworks/releases/download/$SWIFT_SYNTAX_VERSION/$XCFRAMEWORK_NAME.zip"
+URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$SWIFT_SYNTAX_VERSION/$XCFRAMEWORK_NAME.zip"
 
 tee Package.swift <<EOF
 // swift-tools-version: 5.10
