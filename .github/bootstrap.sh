@@ -90,7 +90,7 @@ PLATFORMS=(
     # xcodebuild destination    XCFramework folder name
     "macos"                     "macos-$ARCH"
     "iOS Simulator"             "ios-$ARCH-simulator"
-    "iphoneos"                  "ios-$ARCH"
+    "iOS"                       "ios-$ARCH"
 )
 
 XCODEBUILD_LIBRARIES=""
