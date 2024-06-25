@@ -121,6 +121,10 @@ for MODULE in ${MODULES[@]}; do
     cp $INTERFACE_PATH "$OUTPUTS_PATH"
 done
 
+TARGET_PATH="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos"
+echo "Listing contents of $TARGET_PATH"
+ls -l "$TARGET_PATH"
+
 # FIXME: figure out how to make xcodebuild output the .a file directly. For now, we package it ourselves.
 ar -crs "$LIBRARY_PATH" $DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/*.build/Objects-normal/$ARCH/Binary/*.o
 
