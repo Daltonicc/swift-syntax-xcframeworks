@@ -5,7 +5,7 @@ SWIFT_SYNTAX_NAME="swift-syntax"
 SWIFT_SYNTAX_REPOSITORY_URL="https://github.com/apple/$SWIFT_SYNTAX_NAME.git"
 SEMVER_PATTERN="^[0-9]+\.[0-9]+\.[0-9]+$"
 WRAPPER_NAME="SwiftSyntaxWrapper"
-ARCHS=("arm64" "x86_64")
+ARCHS=("arm64")
 CONFIGURATION="debug"
 DERIVED_DATA_PATH="$PWD/derivedData"
 
