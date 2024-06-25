@@ -5,7 +5,7 @@ SWIFT_SYNTAX_NAME="swift-syntax"
 SWIFT_SYNTAX_REPOSITORY_URL="https://github.com/apple/$SWIFT_SYNTAX_NAME.git"
 SEMVER_PATTERN="^[0-9]+\.[0-9]+\.[0-9]+$"
 WRAPPER_NAME="SwiftSyntaxWrapper"
-ARCHS=("arm64")
+ARCHS="arm64"
 CONFIGURATION="debug"
 DERIVED_DATA_PATH="$PWD/derivedData"
 
@@ -61,9 +61,9 @@ MODULES=(
 )
 
 PLATFORMS=(
-    "generic/platform=macOS"                     "macOS"
-    "generic/platform=iOS"                       "iOS"
-    "generic/platform=iOS Simulator"             "iOS-simulator"
+    "generic/platform=macOS"                     "macOS-$ARCH"
+    "generic/platform=iOS"                       "iOS-$ARCH"
+    "generic/platform=iOS Simulator"             "iOS-$ARCH-simulator"
 )
 
 XCODEBUILD_LIBRARIES=""
@@ -75,38 +75,29 @@ for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     XCODEBUILD_PLATFORM_NAME="${PLATFORMS[i]}"
     XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i+1]}"
 
-    for ARCH in "${ARCHS[@]}"; do
-        OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}-${ARCH}"
-        LIBRARY_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}.a"
-        XCODEBUILD_LIBRARIES="$XCODEBUILD_LIBRARIES -library $LIBRARY_PATH"
+    OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
+    LIBRARY_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}.a"
+    XCODEBUILD_LIBRARIES="$XCODEBUILD_LIBRARIES -library $LIBRARY_PATH"
 
-        mkdir -p "$OUTPUTS_PATH"
+    mkdir -p "$OUTPUTS_PATH"
 
-        xcodebuild clean build \
-            -scheme $WRAPPER_NAME \
-            -configuration $CONFIGURATION \
-            -destination "$XCODEBUILD_PLATFORM_NAME" \
-            -derivedDataPath $DERIVED_DATA_PATH \
-            SKIP_INSTALL=NO \
-            BUILD_LIBRARY_FOR_DISTRIBUTION=YES
+    # `swift build` cannot be used as it doesn't support building for iOS directly
+    xcodebuild -quiet clean build \
+        -scheme $WRAPPER_NAME \
+        -configuration $CONFIGURATION \
+        -destination "generic/platform=$XCODEBUILD_PLATFORM_NAME" \
+        -derivedDataPath $DERIVED_DATA_PATH \
+        SKIP_INSTALL=NO \
+        BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+        >/dev/null 2>&1
 
-        for MODULE in ${MODULES[@]}; do
-            INTERFACE_PATH="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/${MODULE}.build/Objects-normal/$ARCH/${MODULE}.swiftinterface"
-            if [ -f "$INTERFACE_PATH" ]; then
-                cp $INTERFACE_PATH "$OUTPUTS_PATH"
-            else
-                echo "Warning: $INTERFACE_PATH does not exist"
-            fi
-        done
-
-        OBJECT_FILES="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/${WRAPPER_NAME}.build/Objects-normal/$ARCH/*.o"
-        if ls $OBJECT_FILES 1> /dev/null 2>&1; then
-            ar -crs "$LIBRARY_PATH" $OBJECT_FILES
-        else
-            echo "Error: No object files found for $ARCH on $XCODEBUILD_PLATFORM_NAME"
-            exit 1
-        fi
+    for MODULE in ${MODULES[@]}; do
+        INTERFACE_PATH="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/${MODULE}.build/Objects-normal/$ARCH/${MODULE}.swiftinterface"
+        cp $INTERFACE_PATH "$OUTPUTS_PATH"
     done
+
+    # FIXME: figure out how to make xcodebuild output the .a file directly. For now, we package it ourselves.
+    ar -crs "$LIBRARY_PATH" $DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/*.build/Objects-normal/$ARCH/Binary/*.o
 done
 
 cd ..
@@ -114,9 +105,9 @@ cd ..
 XCFRAMEWORK_NAME="$WRAPPER_NAME.xcframework"
 XCFRAMEWORK_PATH="$XCFRAMEWORK_NAME"
 
-xcodebuild -create-xcframework \
+xcodebuild -quiet -create-xcframework \
     $XCODEBUILD_LIBRARIES \
-    -output "${XCFRAMEWORK_PATH}"
+    -output "${XCFRAMEWORK_PATH}" >/dev/null
 
 for ((i = 1; i < ${#PLATFORMS[@]}; i += 2)); do
     XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i]}"
@@ -124,7 +115,7 @@ for ((i = 1; i < ${#PLATFORMS[@]}; i += 2)); do
     cp $OUTPUTS_PATH/*.swiftinterface "$XCFRAMEWORK_PATH/$XCFRAMEWORK_PLATFORM_NAME"
 done
 
-zip -r $XCFRAMEWORK_NAME.zip $XCFRAMEWORK_NAME
+zip --quiet --recurse-paths $XCFRAMEWORK_NAME.zip $XCFRAMEWORK_NAME
 
 CHECKSUM=$(swift package compute-checksum $XCFRAMEWORK_NAME.zip)
 URL="https://github.com/Daltonicc/swift-syntax-xcframeworks/releases/download/$SWIFT_SYNTAX_VERSION/$XCFRAMEWORK_NAME.zip"
