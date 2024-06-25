@@ -62,7 +62,7 @@ MODULES=(
 
 PLATFORMS=(
     "macos"                     "macos-$ARCH"
-    "iOS"                       "ios-$ARCH"
+    "iphoneos"                  "iphoneos-$ARCH"
     "iOS Simulator"             "ios-$ARCH-simulator"
 )
 
