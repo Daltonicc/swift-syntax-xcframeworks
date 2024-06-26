@@ -116,6 +116,7 @@ for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
         -derivedDataPath $DERIVED_DATA_PATH \
         SKIP_INSTALL=NO \
         BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+        GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
         >/dev/null 2>&1
 
     for MODULE in ${MODULES[@]}; do
