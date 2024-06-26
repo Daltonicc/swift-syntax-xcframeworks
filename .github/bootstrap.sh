@@ -90,44 +90,13 @@ PLATFORMS=(
     # xcodebuild destination    XCFramework folder name
     "macos"                     "macos-$ARCH"
     "iOS Simulator"             "ios-$ARCH-simulator"
+    "iOS"                       "ios-$ARCH"
 )
 
 XCODEBUILD_LIBRARIES=""
 PLATFORMS_OUTPUTS_PATH="$PWD/outputs"
 
 cd $SWIFT_SYNTAX_NAME
-
-XCODEBUILD_PLATFORM_NAME="iOS"
-XCFRAMEWORK_PLATFORM_NAME="ios-$ARCH"
-
-OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
-LIBRARY_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}.a"
-XCODEBUILD_LIBRARIES="$XCODEBUILD_LIBRARIES -library $LIBRARY_PATH"
-
-mkdir -p "$OUTPUTS_PATH"
-
-# `swift build` cannot be used as it doesn't support building for iOS directly
-xcodebuild -quiet clean build \
-    -scheme $WRAPPER_NAME \
-    -configuration $CONFIGURATION \
-    -destination "generic/platform=$XCODEBUILD_PLATFORM_NAME" \
-    -derivedDataPath $DERIVED_DATA_PATH \
-    SKIP_INSTALL=NO \
-    BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
-    >/dev/null 2>&1
-
-for MODULE in ${MODULES[@]}; do
-    INTERFACE_PATH="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/${MODULE}.build/Objects-normal/$ARCH/${MODULE}.swiftinterface"
-    cp $INTERFACE_PATH "$OUTPUTS_PATH"
-done
-
-TARGET_PATH="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos"
-echo "Listing contents of $TARGET_PATH"
-ls -l "$TARGET_PATH"
-
-# FIXME: figure out how to make xcodebuild output the .a file directly. For now, we package it ourselves.
-ar -crs /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/outputs/ios-arm64/libSwiftSyntaxWrapper.a /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftBasicFormat.build/Objects-normal/arm64/Binary/SwiftBasicFormat.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftCompilerPlugin.build/Objects-normal/arm64/Binary/SwiftCompilerPlugin.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftCompilerPluginMessageHandling.build/Objects-normal/arm64/Binary/SwiftCompilerPluginMessageHandling.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftDiagnostics.build/Objects-normal/arm64/Binary/SwiftDiagnostics.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftOperators.build/Objects-normal/arm64/Binary/SwiftOperators.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftParser.build/Objects-normal/arm64/Binary/SwiftParser.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftParserDiagnostics.build/Objects-normal/arm64/Binary/SwiftParserDiagnostics.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntax.build/Objects-normal/arm64/Binary/SwiftSyntax.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntax509.build/Objects-normal/arm64/Binary/SwiftSyntax509.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntax510.build/Objects-normal/arm64/Binary/SwiftSyntax510.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntaxBuilder.build/Objects-normal/arm64/Binary/SwiftSyntaxBuilder.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntaxMacroExpansion.build/Objects-normal/arm64/Binary/SwiftSyntaxMacroExpansion.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntaxMacros.build/Objects-normal/arm64/Binary/SwiftSyntaxMacros.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntaxMacrosTestSupport.build/Objects-normal/arm64/Binary/SwiftSyntaxMacrosTestSupport.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/SwiftSyntaxWrapper.build/Objects-normal/arm64/Binary/SwiftSyntaxWrapper.o /Users/runner/work/swift-syntax-xcframeworks/swift-syntax-xcframeworks/derivedData/Build/Intermediates.noindex/swift-syntax.build/debug-iphoneos/_SwiftSyntaxTestSupport.build/Objects-normal/arm64/Binary/_SwiftSyntaxTestSupport.o
-
 
 for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     XCODEBUILD_PLATFORM_NAME="${PLATFORMS[i]}"
