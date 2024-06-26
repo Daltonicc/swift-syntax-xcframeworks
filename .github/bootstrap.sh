@@ -89,8 +89,8 @@ MODULES=(
 PLATFORMS=(
     # xcodebuild destination    XCFramework folder name
     "macos"                     "macos-$ARCH"
-    "iOS Simulator"             "ios-$ARCH-simulator"
     "iOS"                       "ios-$ARCH"
+    "iOS Simulator"             "ios-$ARCH-simulator"
 )
 
 XCODEBUILD_LIBRARIES=""
@@ -124,7 +124,7 @@ for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     done
 
     # FIXME: figure out how to make xcodebuild output the .a file directly. For now, we package it ourselves.
-    ar -crs "$LIBRARY_PATH" $DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/*.build/Objects-normal/$ARCH/Binary/*.o
+    ar -crs "$LIBRARY_PATH" $DERIVED_DATA_PATH/Build/Products/$CONFIGURATION*/*.o
 done
 
 cd ..
