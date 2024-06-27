@@ -109,15 +109,29 @@ for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     mkdir -p "$OUTPUTS_PATH"
 
     # `swift build` cannot be used as it doesn't support building for iOS directly
-    xcodebuild -quiet clean build \
-        -scheme $WRAPPER_NAME \
-        -configuration $CONFIGURATION \
-        -destination "generic/platform=$XCODEBUILD_PLATFORM_NAME" \
-        -derivedDataPath $DERIVED_DATA_PATH \
-        SKIP_INSTALL=NO \
-        BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
-        GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
-        >/dev/null 2>&1
+    if [ "$XCODEBUILD_PLATFORM_NAME" == "macos" ]; then
+        xcodebuild -quiet clean build \
+            -scheme $WRAPPER_NAME \
+            -configuration $CONFIGURATION \
+            -destination "generic/platform=$XCODEBUILD_PLATFORM_NAME" \
+            -derivedDataPath $DERIVED_DATA_PATH \
+            MACOSX_DEPLOYMENT_TARGET=14.0 \
+            SKIP_INSTALL=NO \
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+            GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
+            >/dev/null 2>&1
+    else
+        xcodebuild -quiet clean build \
+            -scheme $WRAPPER_NAME \
+            -configuration $CONFIGURATION \
+            -destination "generic/platform=$XCODEBUILD_PLATFORM_NAME" \
+            -derivedDataPath $DERIVED_DATA_PATH \
+            IPHONEOS_DEPLOYMENT_TARGET=15.0 \
+            SKIP_INSTALL=NO \
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+            GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
+            >/dev/null 2>&1
+    fi
 
     for MODULE in ${MODULES[@]}; do
         INTERFACE_PATH="$DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/${MODULE}.build/Objects-normal/$ARCH/${MODULE}.swiftinterface"
@@ -145,7 +159,7 @@ for ((i = 1; i < ${#PLATFORMS[@]}; i += 2)); do
     XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i]}"
     OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
     
-        # XCFramework platform-specific path adjustments
+    # XCFramework platform-specific path adjustments
     if [[ "$XCFRAMEWORK_PLATFORM_NAME" == "ios-$ARCH-simulator" ]]; then
         DEST_PATH="$XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator"
     elif [[ "$XCFRAMEWORK_PLATFORM_NAME" == "macos-$ARCH" ]]; then
