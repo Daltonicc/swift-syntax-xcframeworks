@@ -86,13 +86,12 @@ MODULES=(
 )
 
 PLATFORMS=(
-    # xcodebuild destination    XCFramework folder name
-    "macos"                     "macos-arm64"
-    "macos"                     "macos-x86_64"
-    "iOS Simulator"             "ios-arm64-simulator"
-    "iOS Simulator"             "ios-x86_64-simulator"
-    "iOS"                       "ios-arm64"
-    "iOS"                       "ios-x86_64"
+    # xcodebuild destination    XCFramework folder name         ARCH
+    "macos"                     "macos-arm64"                   "arm64"
+    "macos"                     "macos-x86_64"                  "x86_64"
+    "iOS Simulator"             "ios-arm64-simulator"           "arm64"
+    "iOS Simulator"             "ios-x86_64-simulator"          "x86_64"
+    "iOS"                       "ios-arm64"                     "arm64"
 )
 
 XCODEBUILD_LIBRARIES=""
@@ -100,10 +99,10 @@ PLATFORMS_OUTPUTS_PATH="$PWD/outputs"
 
 cd $SWIFT_SYNTAX_NAME
 
-for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
+for ((i = 0; i < ${#PLATFORMS[@]}; i += 3)); do
     XCODEBUILD_PLATFORM_NAME="${PLATFORMS[i]}"
     XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i+1]}"
-    ARCH="${XCFRAMEWORK_PLATFORM_NAME#*-}"
+    ARCH="${PLATFORMS[i+2]}"
 
     OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
     LIBRARY_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}.a"
@@ -158,7 +157,7 @@ xcodebuild -quiet -create-xcframework \
     $XCODEBUILD_LIBRARIES \
     -output "${XCFRAMEWORK_PATH}" >/dev/null
 
-for ((i = 1; i < ${#PLATFORMS[@]}; i += 2)); do
+for ((i = 1; i < ${#PLATFORMS[@]}; i += 3)); do
     XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i]}"
     OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
     
