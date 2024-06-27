@@ -5,7 +5,6 @@ SWIFT_SYNTAX_NAME="swift-syntax"
 SWIFT_SYNTAX_REPOSITORY_URL="https://github.com/apple/$SWIFT_SYNTAX_NAME.git"
 SEMVER_PATTERN="^[0-9]+\.[0-9]+\.[0-9]+$"
 WRAPPER_NAME="SwiftSyntaxWrapper"
-ARCH="arm64"
 CONFIGURATION="debug"
 DERIVED_DATA_PATH="$PWD/derivedData"
 
@@ -88,9 +87,12 @@ MODULES=(
 
 PLATFORMS=(
     # xcodebuild destination    XCFramework folder name
-    "macos"                     "macos-$ARCH"
-    "iOS Simulator"             "ios-$ARCH-simulator"
-    "iOS"                       "ios-$ARCH"
+    "macos"                     "macos-arm64"
+    "macos"                     "macos-x86_64"
+    "iOS Simulator"             "ios-arm64-simulator"
+    "iOS Simulator"             "ios-x86_64-simulator"
+    "iOS"                       "ios-arm64"
+    "iOS"                       "ios-x86_64"
 )
 
 XCODEBUILD_LIBRARIES=""
@@ -101,6 +103,7 @@ cd $SWIFT_SYNTAX_NAME
 for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     XCODEBUILD_PLATFORM_NAME="${PLATFORMS[i]}"
     XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i+1]}"
+    ARCH="${XCFRAMEWORK_PLATFORM_NAME#*-}"
 
     OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
     LIBRARY_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}.a"
@@ -160,12 +163,12 @@ for ((i = 1; i < ${#PLATFORMS[@]}; i += 2)); do
     OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
     
     # XCFramework platform-specific path adjustments
-    if [[ "$XCFRAMEWORK_PLATFORM_NAME" == "ios-$ARCH-simulator" ]]; then
+    if [[ "$XCFRAMEWORK_PLATFORM_NAME" == "ios-arm64-simulator" || "$XCFRAMEWORK_PLATFORM_NAME" == "ios-x86_64-simulator" ]]; then
         DEST_PATH="$XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator"
-    elif [[ "$XCFRAMEWORK_PLATFORM_NAME" == "macos-$ARCH" ]]; then
+    elif [[ "$XCFRAMEWORK_PLATFORM_NAME" == "macos-arm64" || "$XCFRAMEWORK_PLATFORM_NAME" == "macos-x86_64" ]]; then
         DEST_PATH="$XCFRAMEWORK_PATH/macos-arm64_x86_64"
-    elif [[ "$XCFRAMEWORK_PLATFORM_NAME" == "ios-$ARCH" ]]; then
-        DEST_PATH="$XCFRAMEWORK_PATH/ios-arm64"
+    elif [[ "$XCFRAMEWORK_PLATFORM_NAME" == "ios-arm64" || "$XCFRAMEWORK_PLATFORM_NAME" == "ios-x86_64" ]]; then
+        DEST_PATH="$XCFRAMEWORK_PATH/ios-arm64_x86_64"
     else
         DEST_PATH="$XCFRAMEWORK_PATH/$XCFRAMEWORK_PLATFORM_NAME"
     fi
