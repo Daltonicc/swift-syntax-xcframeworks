@@ -5,6 +5,7 @@ SWIFT_SYNTAX_NAME="swift-syntax"
 SWIFT_SYNTAX_REPOSITORY_URL="https://github.com/apple/$SWIFT_SYNTAX_NAME.git"
 SEMVER_PATTERN="^[0-9]+\.[0-9]+\.[0-9]+$"
 WRAPPER_NAME="SwiftSyntaxWrapper"
+ARCH="arm64"
 CONFIGURATION="debug"
 DERIVED_DATA_PATH="$PWD/derivedData"
 
@@ -87,11 +88,9 @@ MODULES=(
 
 PLATFORMS=(
     # xcodebuild destination    XCFramework folder name
-    "macos"                     "macos"                         "arm64"
-    "macos"                     "macos"                         "x86_64"
-    "iOS Simulator"             "ios-simulator"                 "arm64"
-    "iOS Simulator"             "ios-simulator"                 "x86_64"
-    "iOS"                       "ios"                           "arm64"
+    "macos"                     "macos-$ARCH"
+    "iOS Simulator"             "ios-$ARCH-simulator"
+    "iOS"                       "ios-$ARCH"
 )
 
 XCODEBUILD_LIBRARIES=""
@@ -99,12 +98,11 @@ PLATFORMS_OUTPUTS_PATH="$PWD/outputs"
 
 cd $SWIFT_SYNTAX_NAME
 
-for ((i = 0; i < ${#PLATFORMS[@]}; i += 3)); do
+for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     XCODEBUILD_PLATFORM_NAME="${PLATFORMS[i]}"
     XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i+1]}"
-    ARCH="${PLATFORMS[i+2]}"
 
-    OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}/${ARCH}"
+    OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
     LIBRARY_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}.a"
     XCODEBUILD_LIBRARIES="$XCODEBUILD_LIBRARIES -library $LIBRARY_PATH"
 
@@ -132,7 +130,6 @@ for ((i = 0; i < ${#PLATFORMS[@]}; i += 3)); do
             SKIP_INSTALL=NO \
             BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
             GCC_GENERATE_DEBUGGING_SYMBOLS=NO \
-            ARCHS=$ARCH \
             >/dev/null 2>&1
     fi
 
@@ -154,37 +151,25 @@ cd ..
 XCFRAMEWORK_NAME="$WRAPPER_NAME.xcframework"
 XCFRAMEWORK_PATH="$XCFRAMEWORK_NAME"
 
-LIBRARIES_TO_INCLUDE=()
-
-# Consolidate libraries per platform to avoid duplicates
-declare -A PLATFORM_LIBRARIES
-
-for ((i = 0; i < ${#PLATFORMS[@]}; i += 3)); do
-    XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i+1]}"
-    ARCH="${PLATFORMS[i+2]}"
-
-    LIBRARY_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}/${ARCH}/lib${WRAPPER_NAME}.a"
-
-    if [[ -z "${PLATFORM_LIBRARIES[$XCFRAMEWORK_PLATFORM_NAME]}" ]]; then
-        PLATFORM_LIBRARIES[$XCFRAMEWORK_PLATFORM_NAME]="$LIBRARY_PATH"
-    else
-        PLATFORM_LIBRARIES[$XCFRAMEWORK_PLATFORM_NAME]="${PLATFORM_LIBRARIES[$XCFRAMEWORK_PLATFORM_NAME]} -library $LIBRARY_PATH"
-    fi
-done
-
-# Create the XCFramework
 xcodebuild -quiet -create-xcframework \
-    ${PLATFORM_LIBRARIES[@]} \
+    $XCODEBUILD_LIBRARIES \
     -output "${XCFRAMEWORK_PATH}" >/dev/null
 
-# Copy swiftinterface files to the appropriate locations in the XCFramework
-for ((i = 0; i < ${#PLATFORMS[@]}; i += 3)); do
-    XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i+1]}"
-    ARCH="${PLATFORMS[i+2]}"
-
-    OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}/${ARCH}"
-    DEST_PATH="$XCFRAMEWORK_PATH/$XCFRAMEWORK_PLATFORM_NAME"
-
+for ((i = 1; i < ${#PLATFORMS[@]}; i += 2)); do
+    XCFRAMEWORK_PLATFORM_NAME="${PLATFORMS[i]}"
+    OUTPUTS_PATH="${PLATFORMS_OUTPUTS_PATH}/${XCFRAMEWORK_PLATFORM_NAME}"
+    
+    # XCFramework platform-specific path adjustments
+    if [[ "$XCFRAMEWORK_PLATFORM_NAME" == "ios-$ARCH-simulator" ]]; then
+        DEST_PATH="$XCFRAMEWORK_PATH/ios-arm64_x86_64-simulator"
+    elif [[ "$XCFRAMEWORK_PLATFORM_NAME" == "macos-$ARCH" ]]; then
+        DEST_PATH="$XCFRAMEWORK_PATH/macos-arm64_x86_64"
+    elif [[ "$XCFRAMEWORK_PLATFORM_NAME" == "ios-$ARCH" ]]; then
+        DEST_PATH="$XCFRAMEWORK_PATH/ios-arm64"
+    else
+        DEST_PATH="$XCFRAMEWORK_PATH/$XCFRAMEWORK_PLATFORM_NAME"
+    fi
+    
     cp $OUTPUTS_PATH/*.swiftinterface "$DEST_PATH"
 done
 
